@@ -1,42 +1,31 @@
-# Mattermost Icebreaker Plugin
-This plugin adds the ability to ask random users Icebreaker questions in a channel.
+# Mattermost Lunchbot Plugin
+This plugin pairs random users from a channel with each other. They get asked to go to lunch together. The idea is for a team to get to know each other better, not just to stick to your people day in and day out.
 
 ```
-Mike:           /icebreaker
-IceBreaker Bot: Hey John! Emacs or Vim?
-John:           VSCode! But with Vim bindings...
+John: /lunchbot topics add Geocaching
+John: /lunchbot topics add playing guitar
+Mike: /lunchbot blacklist add George
+Mike: /lunchbot topics add Basketball
+Mike: /lunchbot
+
+Direct chat to Mike:
+LunchBot: Hey Mike! You should meet up with John. You could talk about Basketball.
+
+Direct chat to John:
+LunchBot: Hey John! You should meet up with Mike. You could talk about Geocaching.
 ```
 
-```
-Mike:           /icebreaker add What's your favorite sports?
-IceBreaker Bot: Thanks John! Added your proposal: 'What's your favorite sports?'. Total number of proposals: 1
-Admin:          /icebreaker show proposals
-IceBreaker Bot: Proposed questions:
-                1. John: What's your favorite sports?
-Admin:          /icebreaker approve 1
-IceBreaker Bot: Question has been approved: What's your favorite sports?
-Mike:           /icebreaker
-IceBreaker Bot: Hey John! What's your favorite sports?
-John:           I love playing basketball! Anyone else here? We can meet up tomorrow and play some 3on3...
-```
-
-```
-Mike:           /icebreaker
-IceBreaker Bot: Hey John! What's your favorite superhero?
-John:           Wtf Mike! Stop triggering this bot every 5 minutes!
-```
 
 ## Why?
 In COVID times it's hard to get to know your colleagues by casually chatting by the watercooler. This bot enables these type of random interactions between everyone.
 
 ## Features
-* Everyone can trigger a new Icebreaker question using `/icebreaker`
-* Let users propose new questions, admins need to approve them before they can get asked: `/icebreaker add <question>`, `/icebreaker show porposals` and `/icebreaker approve <question-index>`
-* Questions are stored per channel, so each channel can have their own set of questions
-* Fill in a bunch of default questions using `/icebreaker reset questions`
+* Everyone can trigger to get paired up by using `/lunchbot`
+* Let users set topics they'd like to talk about using `/lunchbot topics add <topic>`
+* Let users blacklist certain users they don't want to get paired with using `/lunchbot blacklist add <username>`
 
 ## Contribute
 This plugin is based on the [mattermost-plugin-starter-template](https://github.com/mattermost/mattermost-plugin-starter-template). See there on how to set everything up and test the plugin.
 
 ## Attributions
-The icecube logo is licensed under Creative Commons: `ice cube by 23 icons from the Noun Project`
+The logo is licensed under Creative Commons: `Restaurant by Clockwise from the Noun Project`

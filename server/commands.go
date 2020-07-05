@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
 	"strings"
 
 	"github.com/mattermost/mattermost-server/v5/model"
@@ -11,79 +10,61 @@ import (
 )
 
 const (
-	commandIcebreaker                  = "icebreaker"
-	commandIcebreakerAdd               = commandIcebreaker + " add"
-	commandIcebreakerApprove           = commandIcebreaker + " approve"
-	commandIcebreakerReject            = commandIcebreaker + " reject"
-	commandIcebreakerRemove            = commandIcebreaker + " remove"
-	commandIcebreakerClearAllProposals = commandIcebreaker + " clearall proposals"
-	commandIcebreakerClearAllApproved  = commandIcebreaker + " clearall approved"
-	commandIcebreakerShowProposals     = commandIcebreaker + " show proposals"
-	commandIcebreakerShowApproved      = commandIcebreaker + " show approved"
-	commandIcebreakerResetToDefault    = commandIcebreaker + " reset questions"
+	commandLunchbot                = "lunchbot"
+	commandLunchbotBlacklistShow   = commandLunchbot + " blacklist show"
+	commandLunchbotBlacklistAdd    = commandLunchbot + " blacklist add"
+	commandLunchbotBlacklistRemove = commandLunchbot + " blacklist remove"
+	commandLunchbotTopicsShow      = commandLunchbot + " topics show"
+	commandLunchbotTopicsAdd       = commandLunchbot + " topics add"
+	commandLunchbotTopicsRemove    = commandLunchbot + " topics remove"
 )
 
 func (p *Plugin) registerCommands() error {
 	commands := [...]model.Command{
 		model.Command{
-			Trigger:          commandIcebreaker,
+			Trigger:          commandLunchbot,
 			AutoComplete:     true,
-			AutoCompleteDesc: "Ask an icebreaker",
+			AutoCompleteDesc: "Pairs you with a random user",
 		},
 		model.Command{
-			Trigger:          commandIcebreakerAdd,
+			Trigger:          commandLunchbotBlacklistShow,
 			AutoComplete:     true,
-			AutoCompleteHint: "<question>",
-			AutoCompleteDesc: "Propose as new icebreaker question",
+			AutoCompleteDesc: "Your blacklist is a list of users you do not want to get paired with",
 		},
 		model.Command{
-			Trigger:          commandIcebreakerApprove,
+			Trigger:          commandLunchbotBlacklistAdd,
 			AutoComplete:     true,
-			AutoCompleteHint: "<id>",
-			AutoCompleteDesc: "Approve a proposed IceBreaker question. Channel owners only",
+			AutoCompleteHint: "<username>",
+			AutoCompleteDesc: "Add someone to your blacklist by his username",
 		},
 		model.Command{
-			Trigger:          commandIcebreakerReject,
+			Trigger:          commandLunchbotBlacklistRemove,
 			AutoComplete:     true,
-			AutoCompleteHint: "<id>",
-			AutoCompleteDesc: "Reject a proposed IceBreaker question. Channel owners only",
+			AutoCompleteHint: "<username>",
+			AutoCompleteDesc: "Remove someone from your blacklist by his username",
 		},
 		model.Command{
-			Trigger:          commandIcebreakerRemove,
+			Trigger:          commandLunchbotTopicsShow,
 			AutoComplete:     true,
-			AutoCompleteHint: "<id>",
-			AutoCompleteDesc: "Remove an already approved IceBreaker question. Channel owners only",
+			AutoCompleteDesc: "Topics are things you'd like to talk about",
 		},
 		model.Command{
-			Trigger:          commandIcebreakerClearAllProposals,
+			Trigger:          commandLunchbotTopicsAdd,
 			AutoComplete:     true,
-			AutoCompleteDesc: "Remove ALL proposed IceBreaker question. Channel owners only",
+			AutoCompleteHint: "<topic>",
+			AutoCompleteDesc: "Add a topic to your list",
 		},
 		model.Command{
-			Trigger:          commandIcebreakerClearAllApproved,
+			Trigger:          commandLunchbotTopicsRemove,
 			AutoComplete:     true,
-			AutoCompleteDesc: "Remove ALL approved IceBreaker question. Channel owners only",
-		},
-		model.Command{
-			Trigger:          commandIcebreakerShowProposals,
-			AutoComplete:     true,
-			AutoCompleteDesc: "Show a list of proposed Icebreaker questions. Channel owners only",
-		},
-		model.Command{
-			Trigger:          commandIcebreakerShowApproved,
-			AutoComplete:     true,
-			AutoCompleteDesc: "Show the list of Icebreaker questions. Channel owners only",
-		},
-		model.Command{
-			Trigger:          commandIcebreakerResetToDefault,
-			AutoComplete:     true,
-			AutoCompleteDesc: "Resets the Icebreaker questions to the default ones from this plugin. Channel owners only",
+			AutoCompleteHint: "<topic>",
+			AutoCompleteDesc: "Remove a topic from your list",
 		},
 	}
 
 	for _, command := range commands {
 		if err := p.API.RegisterCommand(&command); err != nil {
-			return errors.Wrapf(err, fmt.Sprintf("Failed to register %s command", commandIcebreakerResetToDefault))
+			return errors.Wrapf(err, fmt.Sprintf("Failed to register %s command", command.Trigger))
 		}
 	}
 
@@ -93,58 +74,41 @@ func (p *Plugin) registerCommands() error {
 // ExecuteCommand executes a command that has been previously registered via the RegisterCommand
 // API.
 func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
-	adminCommands := map[string]func(args *model.CommandArgs) (*model.CommandResponse, *model.AppError){
-		commandIcebreakerApprove: func(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
-			return p.executeCommandIcebreakerApprove(args), nil
+	userCommands := map[string]func(args *model.CommandArgs) (*model.CommandResponse, *model.AppError){
+		commandLunchbotBlacklistShow: func(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
+			return p.executeCommandLunchbotBlacklistShow(args), nil
 		},
-		commandIcebreakerReject: func(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
-			return p.executeCommandIcebreakerReject(args), nil
+		commandLunchbotBlacklistAdd: func(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
+			return p.executeCommandLunchbotBlacklistAdd(args), nil
 		},
-		commandIcebreakerRemove: func(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
-			return p.executeCommandIcebreakerRemove(args), nil
+		commandLunchbotBlacklistRemove: func(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
+			return p.executeCommandLunchbotBlacklistRemove(args), nil
 		},
-		commandIcebreakerClearAllProposals: func(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
-			return p.executeCommandIcebreakerClearAllProposals(args), nil
+		commandLunchbotTopicsShow: func(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
+			return p.executeCommandLunchbotTopicsShow(args), nil
 		},
-		commandIcebreakerClearAllApproved: func(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
-			return p.executeCommandIcebreakerClearAllApproved(args), nil
+		commandLunchbotTopicsAdd: func(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
+			return p.executeCommandLunchbotTopicsAdd(args), nil
 		},
-		commandIcebreakerShowProposals: func(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
-			return p.executeCommandIcebreakerShowProposals(args), nil
-		},
-		commandIcebreakerShowApproved: func(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
-			return p.executeCommandIcebreakerShowApproved(args), nil
-		},
-		commandIcebreakerResetToDefault: func(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
-			return p.executeCommandIcebreakerResetToDefault(args), nil
+		commandLunchbotTopicsRemove: func(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
+			return p.executeCommandLunchbotTopicsRemove(args), nil
 		},
 	}
 
-	userCommands := map[string]func(args *model.CommandArgs) (*model.CommandResponse, *model.AppError){
-		commandIcebreakerAdd: func(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
-			return p.executeCommandIcebreakerAdd(args), nil
-		},
-		//this needs to be last, as prefix `/icebreaker` is also part of the above commands
-		commandIcebreaker: func(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
-			return p.executeCommandIcebreaker(args), nil
+	mainCommand := map[string]func(args *model.CommandArgs) (*model.CommandResponse, *model.AppError){
+		//this needs to be last, as prefix `/lunchbot` is also part of the above commands
+		commandLunchbot: func(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
+			return p.executeCommandLunchbot(args), nil
 		},
 	}
 
 	trigger := strings.TrimPrefix(args.Command, "/")
-
-	//first check for admin commands, make sure the user has the right permission
-	for key, value := range adminCommands {
+	for key, value := range userCommands {
 		if strings.HasPrefix(trigger, key) {
-			sourceUser, _ := p.API.GetUser(args.UserId)
-			if response := requireAdminUser(sourceUser); response != nil {
-				return response, nil
-			}
 			return value(args)
 		}
 	}
-
-	//then go for the user commands
-	for key, value := range userCommands {
+	for key, value := range mainCommand {
 		if strings.HasPrefix(trigger, key) {
 			return value(args)
 		}
@@ -157,117 +121,18 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 	}, nil
 }
 
-func (p *Plugin) executeCommandIcebreakerResetToDefault(args *model.CommandArgs) *model.CommandResponse {
-	p.FillDefaultQuestions(args.TeamId, args.ChannelId)
+func (p *Plugin) executeCommandLunchbotBlacklistShow(args *model.CommandArgs) *model.CommandResponse {
+	message := fmt.Sprintf("Your blacklist is empty. Use '/%s' to add someone to your blacklist.", commandLunchbotBlacklistAdd)
 
-	return &model.CommandResponse{
-		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
-		Text:         fmt.Sprintf("All questions have been reset to the default ones. Beware the pitchforks!"),
-	}
-}
-
-func (p *Plugin) executeCommandIcebreakerClearAllProposals(args *model.CommandArgs) *model.CommandResponse {
-	data := p.ReadFromStorage(args.TeamId, args.ChannelId)
-	lenBefore := len(data.ProposedQuestions[args.TeamId][args.ChannelId])
-	data.ProposedQuestions[args.TeamId][args.ChannelId] = nil
-	p.WriteToStorage(&data)
-
-	return &model.CommandResponse{
-		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
-		Text:         fmt.Sprintf("All %d proposed questions have been removed. Beware the pitchforks!", lenBefore),
-	}
-}
-
-func (p *Plugin) executeCommandIcebreakerClearAllApproved(args *model.CommandArgs) *model.CommandResponse {
-	data := p.ReadFromStorage(args.TeamId, args.ChannelId)
-	lenBefore := len(data.ApprovedQuestions[args.TeamId][args.ChannelId])
-	data.ApprovedQuestions[args.TeamId][args.ChannelId] = nil
-	p.WriteToStorage(&data)
-
-	return &model.CommandResponse{
-		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
-		Text:         fmt.Sprintf("All %d questions have been removed. Beware the pitchforks!", lenBefore),
-	}
-}
-
-func (p *Plugin) executeCommandIcebreakerRemove(args *model.CommandArgs) *model.CommandResponse {
-	data := p.ReadFromStorage(args.TeamId, args.ChannelId)
-
-	index, errResponse := getIndex(args.Command, data.ApprovedQuestions[args.TeamId][args.ChannelId])
-	if errResponse != nil {
-		return errResponse
-	}
-
-	question := data.ApprovedQuestions[args.TeamId][args.ChannelId][index]
-	//from https://stackoverflow.com/a/37335777/199513
-	data.ApprovedQuestions[args.TeamId][args.ChannelId] = append(data.ApprovedQuestions[args.TeamId][args.ChannelId][:index], data.ApprovedQuestions[args.TeamId][args.ChannelId][index+1:]...)
-
-	p.WriteToStorage(&data)
-
-	//TODO: Should we notify the author of the question as well? "Hey <user>! Your question for channel <channel> has been removed: <question>"
-
-	return &model.CommandResponse{
-		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
-		Text:         fmt.Sprintf("Question has been removed: %s", question),
-	}
-}
-
-func (p *Plugin) executeCommandIcebreakerReject(args *model.CommandArgs) *model.CommandResponse {
-	data := p.ReadFromStorage(args.TeamId, args.ChannelId)
-
-	index, errResponse := getIndex(args.Command, data.ProposedQuestions[args.TeamId][args.ChannelId])
-	if errResponse != nil {
-		return errResponse
-	}
-
-	question := data.ProposedQuestions[args.TeamId][args.ChannelId][index]
-	//from https://stackoverflow.com/a/37335777/199513
-	data.ProposedQuestions[args.TeamId][args.ChannelId] = append(data.ProposedQuestions[args.TeamId][args.ChannelId][:index], data.ProposedQuestions[args.TeamId][args.ChannelId][index+1:]...)
-
-	p.WriteToStorage(&data)
-
-	//TODO: Should we notify the author of the proposal as well? "Hey <user>! Your proposed question for channel <channel> has been rejected: <question>"
-
-	return &model.CommandResponse{
-		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
-		Text:         fmt.Sprintf("Question has been rejected: %s", question),
-	}
-}
-
-func (p *Plugin) executeCommandIcebreakerApprove(args *model.CommandArgs) *model.CommandResponse {
-	data := p.ReadFromStorage(args.TeamId, args.ChannelId)
-
-	index, errResponse := getIndex(args.Command, data.ProposedQuestions[args.TeamId][args.ChannelId])
-	if errResponse != nil {
-		return errResponse
-	}
-
-	question := data.ProposedQuestions[args.TeamId][args.ChannelId][index]
-	data.ApprovedQuestions[args.TeamId][args.ChannelId] = append(data.ApprovedQuestions[args.TeamId][args.ChannelId], question)
-	//from https://stackoverflow.com/a/37335777/199513
-	data.ProposedQuestions[args.TeamId][args.ChannelId] = append(data.ProposedQuestions[args.TeamId][args.ChannelId][:index], data.ProposedQuestions[args.TeamId][args.ChannelId][index+1:]...)
-
-	p.WriteToStorage(&data)
-
-	return &model.CommandResponse{
-		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
-		Text:         fmt.Sprintf("Question has been approved: %s", question),
-	}
-}
-
-func (p *Plugin) executeCommandIcebreakerShowProposals(args *model.CommandArgs) *model.CommandResponse {
-	data := p.ReadFromStorage(args.TeamId, args.ChannelId)
-
-	if len(data.ProposedQuestions[args.TeamId][args.ChannelId]) == 0 {
-		return &model.CommandResponse{
-			ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
-			Text:         "There are no proposed questions for this channel...",
+	data := p.ReadFromStorage()
+	if data.Blacklists != nil {
+		if blacklist, ok := data.Blacklists[args.UserId]; ok {
+			message = "Users on your blacklist:\n"
+			for entry := range blacklist {
+				user, _ := p.API.GetUser(entry)
+				message += fmt.Sprintf("  - %s", user.GetDisplayName(""))
+			}
 		}
-	}
-
-	message := "Proposed questions:\n"
-	for index, question := range data.ProposedQuestions[args.TeamId][args.ChannelId] {
-		message = message + fmt.Sprintf("%d.\t%s:\t%s\n", index, question.Creator, question.Question)
 	}
 
 	return &model.CommandResponse{
@@ -276,19 +141,86 @@ func (p *Plugin) executeCommandIcebreakerShowProposals(args *model.CommandArgs) 
 	}
 }
 
-func (p *Plugin) executeCommandIcebreakerShowApproved(args *model.CommandArgs) *model.CommandResponse {
-	data := p.ReadFromStorage(args.TeamId, args.ChannelId)
-
-	if len(data.ApprovedQuestions[args.TeamId][args.ChannelId]) == 0 {
+func (p *Plugin) executeCommandLunchbotBlacklistAdd(args *model.CommandArgs) *model.CommandResponse {
+	givenUserID := strings.TrimPrefix(args.Command, fmt.Sprintf("/%s", commandLunchbotBlacklistAdd))
+	givenUserID = strings.TrimPrefix(givenUserID, " ")
+	if len(givenUserID) <= 0 {
 		return &model.CommandResponse{
 			ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
-			Text:         "There are no questions for this channel...",
+			Text:         "Error: Please enter a user you want to blacklist",
 		}
 	}
 
-	message := "Questions:\n"
-	for index, question := range data.ApprovedQuestions[args.TeamId][args.ChannelId] {
-		message = message + fmt.Sprintf("%d.\t%s:\t%s\n", index, question.Creator, question.Question)
+	user := p.GetUser(givenUserID)
+	if user == nil {
+		return &model.CommandResponse{
+			ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
+			Text:         fmt.Sprintf("Error: Cannot find the user %s", givenUserID),
+		}
+	}
+
+	data := p.ReadFromStorage()
+	if data.Blacklists == nil {
+		data.Blacklists = make(map[string]map[string]struct{})
+	}
+	if blacklist, ok := data.Blacklists[args.UserId]; ok {
+		blacklist[user.Id] = struct{}{}
+	} else {
+		data.Blacklists[args.UserId] = map[string]struct{}{user.Id: struct{}{}}
+	}
+
+	return &model.CommandResponse{
+		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
+		Text:         fmt.Sprintf("Added '%s' to your blacklist", user.GetDisplayName("")),
+	}
+}
+
+func (p *Plugin) executeCommandLunchbotBlacklistRemove(args *model.CommandArgs) *model.CommandResponse {
+	givenUserID := strings.TrimPrefix(args.Command, fmt.Sprintf("/%s", commandLunchbotBlacklistRemove))
+	givenUserID = strings.TrimPrefix(givenUserID, " ")
+	if len(givenUserID) <= 0 {
+		return &model.CommandResponse{
+			ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
+			Text:         "Error: Please enter a user you want to remove from your blacklist",
+		}
+	}
+
+	user := p.GetUser(givenUserID)
+	if user == nil {
+		return &model.CommandResponse{
+			ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
+			Text:         fmt.Sprintf("Error: Cannot find the user '%s'", givenUserID),
+		}
+	}
+
+	data := p.ReadFromStorage()
+	if data.Blacklists != nil {
+		if blacklist, ok := data.Blacklists[args.UserId]; ok {
+			delete(blacklist, user.Id)
+
+			return &model.CommandResponse{
+				ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
+				Text:         fmt.Sprintf("Removed '%s' from your blacklist", user.GetDisplayName("")),
+			}
+		}
+	}
+	return &model.CommandResponse{
+		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
+		Text:         fmt.Sprintf("Error: Cannot remove '%s' from your blacklist.", user.GetDisplayName("")),
+	}
+}
+
+func (p *Plugin) executeCommandLunchbotTopicsShow(args *model.CommandArgs) *model.CommandResponse {
+	message := fmt.Sprintf("There are no topics set yet... Use '/%s' to set a topic.", commandLunchbotTopicsShow)
+
+	data := p.ReadFromStorage()
+	if data.UserTopics != nil {
+		if topics, ok := data.UserTopics[args.UserId]; ok {
+			message = "Your topics:\n"
+			for entry := range topics {
+				message += fmt.Sprintf("  - %s", entry)
+			}
+		}
 	}
 
 	return &model.CommandResponse{
@@ -297,90 +229,90 @@ func (p *Plugin) executeCommandIcebreakerShowApproved(args *model.CommandArgs) *
 	}
 }
 
-func (p *Plugin) executeCommandIcebreaker(args *model.CommandArgs) *model.CommandResponse {
-	data := p.ReadFromStorage(args.TeamId, args.ChannelId)
-
-	//check if there are any approved questions yet
-	if len(data.ApprovedQuestions[args.TeamId][args.ChannelId]) == 0 {
+func (p *Plugin) executeCommandLunchbotTopicsAdd(args *model.CommandArgs) *model.CommandResponse {
+	givenTopic := strings.TrimPrefix(args.Command, fmt.Sprintf("/%s", commandLunchbotTopicsAdd))
+	givenTopic = strings.TrimPrefix(givenTopic, " ")
+	if len(givenTopic) <= 0 {
 		return &model.CommandResponse{
 			ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
-			Text:         "Error: There are no approved questions that I can ask. Be the first one to propose a question by using '/icebreaker add <question>'",
+			Text:         "Error: Please enter a valid topic",
 		}
 	}
 
-	//get a random user that is not a bot
-	user, err := p.GetRandomUser(args.ChannelId, args.UserId)
+	data := p.ReadFromStorage()
+	if data.UserTopics == nil {
+		data.UserTopics = make(map[string]map[string]struct{})
+	}
+	if topics, ok := data.UserTopics[args.UserId]; ok {
+		topics[givenTopic] = struct{}{}
+	} else {
+		data.UserTopics[args.UserId] = map[string]struct{}{givenTopic: struct{}{}}
+	}
+
+	return &model.CommandResponse{
+		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
+		Text:         fmt.Sprintf("Added '%s' to your topics", givenTopic),
+	}
+}
+
+func (p *Plugin) executeCommandLunchbotTopicsRemove(args *model.CommandArgs) *model.CommandResponse {
+	givenTopic := strings.TrimPrefix(args.Command, fmt.Sprintf("/%s", commandLunchbotTopicsRemove))
+	givenTopic = strings.TrimPrefix(givenTopic, " ")
+	if len(givenTopic) <= 0 {
+		return &model.CommandResponse{
+			ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
+			Text:         "Error: Please enter a valid topic",
+		}
+	}
+
+	data := p.ReadFromStorage()
+	if data.UserTopics != nil {
+		if topics, ok := data.UserTopics[args.UserId]; ok {
+			if _, ok := data.UserTopics[args.UserId][givenTopic]; ok {
+				delete(topics, givenTopic)
+				return &model.CommandResponse{
+					ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
+					Text:         fmt.Sprintf("Removed '%s' from your topics", givenTopic),
+				}
+			}
+		}
+	}
+	return &model.CommandResponse{
+		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
+		Text:         fmt.Sprintf("Error: Cannot remove '%s' from your topics.", givenTopic),
+	}
+}
+
+func (p *Plugin) executeCommandLunchbot(args *model.CommandArgs) *model.CommandResponse {
+	triggerUser, err := p.API.GetUser(args.UserId)
 	if err != nil {
 		return &model.CommandResponse{
 			ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
-			Text:         "Error: Cannot get a user to ask a question for. Note: This plugin will not ask questions to offline or DND users.",
+			Text:         "Error: Cannot get your user...",
 		}
 	}
-
-	//build the question and ask it
-	question := data.ApprovedQuestions[args.TeamId][args.ChannelId][rand.Intn(len(data.ApprovedQuestions[args.TeamId][args.ChannelId]))]
-	message := fmt.Sprintf("Hey @%s! %s", user.GetDisplayName(""), question.Question)
-	post := &model.Post{
-		ChannelId: args.ChannelId,
-		RootId:    args.RootId,
-		UserId:    p.botID,
-		Message:   message,
-	}
-
-	if _, err = p.API.CreatePost(post); err != nil {
-		const errorMessage = "Error: Failed to create post"
-		p.API.LogError(errorMessage, "err", err.Error())
+	pairedUser, err := p.GetPairingForUserID(args.ChannelId, args.UserId)
+	if err != nil {
 		return &model.CommandResponse{
 			ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
-			Text:         errorMessage,
+			Text:         "Error: Cannot match you with a user from this channel",
 		}
+	}
+
+	topicForTriggerer := p.GetRandomTopic(pairedUser.Id)
+	topicForPairedUser := p.GetRandomTopic(args.UserId)
+
+	msgForTriggerer := fmt.Sprintf("Hey %s! You should meet up with %s. %s", triggerUser.GetDisplayName(""), pairedUser.GetDisplayName(""), topicForTriggerer)
+	msgForPairedUser := fmt.Sprintf("Hey %s! You should meet up with %s. %s", pairedUser.GetDisplayName(""), triggerUser.GetDisplayName(""), topicForPairedUser)
+
+	resp := p.SendPrivateMessage(msgForTriggerer, triggerUser.Id)
+	if resp != nil {
+		return resp
+	}
+	resp = p.SendPrivateMessage(msgForPairedUser, pairedUser.Id)
+	if resp != nil {
+		return resp
 	}
 
 	return &model.CommandResponse{}
-}
-
-func (p *Plugin) executeCommandIcebreakerAdd(args *model.CommandArgs) *model.CommandResponse {
-	//check the user input and extract the question from it
-	givenQuestion := strings.TrimPrefix(args.Command, fmt.Sprintf("/%s", commandIcebreakerAdd))
-	givenQuestion = strings.TrimPrefix(givenQuestion, " ")
-	if len(givenQuestion) <= 0 {
-		return &model.CommandResponse{
-			ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
-			Text:         "Error: Please enter a question",
-		}
-	}
-
-	newQuestion := Question{}
-	creator, _ := p.API.GetUser(args.UserId)
-	newQuestion.Creator = creator.Id
-	newQuestion.Question = givenQuestion
-
-	data := p.ReadFromStorage(args.TeamId, args.ChannelId)
-
-	//Check if the question already is proposed or even approved
-	for _, question := range data.ProposedQuestions[args.TeamId][args.ChannelId] {
-		if question.Question == newQuestion.Question {
-			return &model.CommandResponse{
-				ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
-				Text:         "Error: Your question has already been proposed",
-			}
-		}
-	}
-	for _, question := range data.ApprovedQuestions[args.TeamId][args.ChannelId] {
-		if question.Question == newQuestion.Question {
-			return &model.CommandResponse{
-				ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
-				Text:         "Error: Your question has already been approved",
-			}
-		}
-	}
-
-	data.ProposedQuestions[args.TeamId][args.ChannelId] = append(data.ProposedQuestions[args.TeamId][args.ChannelId], newQuestion)
-
-	p.WriteToStorage(&data)
-
-	return &model.CommandResponse{
-		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
-		Text:         fmt.Sprintf("Thanks %s! Added your proposal: '%s'. Total number of proposals: %d", newQuestion.Creator, newQuestion.Question, len(data.ProposedQuestions[args.TeamId][args.ChannelId])),
-	}
 }

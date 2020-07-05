@@ -24,16 +24,11 @@ type Plugin struct {
 	configuration *configuration
 }
 
-//Question stores information about a icebreaker question
-type Question struct {
-	Creator  string `json:"creator"`
-	Question string `json:"question"`
-}
-
-//IceBreakerData contains all data necessary to be stored for the Icebreaker Plugin
-type IceBreakerData struct {
-	ApprovedQuestions map[string]map[string][]Question `json:"ApprovedQuestions"`
-	ProposedQuestions map[string]map[string][]Question `json:"ProposedQuestions"`
+//LunchbotData contains all data necessary to be stored for the Lunchbot Plugin
+type LunchbotData struct {
+	LastPairings map[string][]string            `json:"LastPairings"` //Key: UserID, Value: List of users that this user has been paired with
+	UserTopics   map[string]map[string]struct{} `json:"UserTopics"`   //Key: UserID, Value: Set of topics a user is interested in
+	Blacklists   map[string]map[string]struct{} `json:"Blacklists"`   //Key: UserID, Value: Set of users that this user has blacklisted
 }
 
 // OnActivate is invoked when the plugin is activated.
@@ -51,12 +46,12 @@ func (p *Plugin) OnActivate() error {
 
 	//make sure the bot exists
 	botID, ensureBotError := p.Helpers.EnsureBot(&model.Bot{
-		Username:    "icebreaker",
-		DisplayName: "IceBreaker Bot",
-		Description: "A bot created to break the ice",
-	}, plugin.ProfileImagePath("/assets/icecube.png"))
+		Username:    "lunchbot",
+		DisplayName: "LunchBot",
+		Description: "A bot to find random people to lunch with",
+	}, plugin.ProfileImagePath("/assets/lunch.png"))
 	if ensureBotError != nil {
-		return errors.Wrap(ensureBotError, "failed to ensure icebreaker bot.")
+		return errors.Wrap(ensureBotError, "failed to ensure lunchbot.")
 	}
 	p.botID = botID
 
