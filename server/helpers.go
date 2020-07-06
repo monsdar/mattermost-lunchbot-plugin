@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"reflect"
+	"strings"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 )
@@ -36,6 +37,17 @@ func (p *Plugin) GetUser(userStr string) *model.User {
 	}
 
 	//then try to get the user by userId
+	user, err = p.API.GetUser(userStr)
+	if err == nil {
+		return user
+	}
+
+	//then remove the `@` and check if it's possible to find the user then
+	userStr = strings.TrimPrefix(userStr, "@")
+	user, err = p.API.GetUserByUsername(userStr)
+	if err == nil {
+		return user
+	}
 	user, err = p.API.GetUser(userStr)
 	if err == nil {
 		return user
@@ -78,6 +90,9 @@ func (p *Plugin) GetPairingForUserID(channelID string, userID string) (*model.Us
 		users[i], users[j] = users[j], users[i]
 	})
 
+	//we need to check the blacklist later on, read here to avoid multiple reads
+	data := p.ReadFromStorage()
+
 	targetuser := new(model.User)
 	hasUserBeenFound := false
 	for _, user := range users {
@@ -88,7 +103,19 @@ func (p *Plugin) GetPairingForUserID(channelID string, userID string) (*model.Us
 			continue
 		}
 
-		//TODO: Check blacklist
+		//check blacklists of triggering and target user as well
+		if data.Blacklists != nil {
+			if blacklist, ok := data.Blacklists[userID]; ok {
+				if _, ok := blacklist[user.Id]; ok {
+					continue
+				}
+			}
+			if blacklist, ok := data.Blacklists[user.Id]; ok {
+				if _, ok := blacklist[userID]; ok {
+					continue
+				}
+			}
+		}
 
 		status, err := p.API.GetUserStatus(user.Id)
 		if (err != nil) || (status.Status == "offline") {

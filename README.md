@@ -28,4 +28,4 @@ In COVID times it's hard to get to know your colleagues by casually chatting by 
 This plugin is based on the [mattermost-plugin-starter-template](https://github.com/mattermost/mattermost-plugin-starter-template). See there on how to set everything up and test the plugin.
 
 ## Attributions
-The logo is licensed under Creative Commons: `Restaurant by Clockwise from the Noun Project`
+The logo is licensed under Creative Commons: `together by Adrien Coquet from the Noun Project`

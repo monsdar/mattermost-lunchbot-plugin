@@ -130,7 +130,7 @@ func (p *Plugin) executeCommandLunchbotBlacklistShow(args *model.CommandArgs) *m
 			message = "Users on your blacklist:\n"
 			for entry := range blacklist {
 				user, _ := p.API.GetUser(entry)
-				message += fmt.Sprintf("  - %s", user.GetDisplayName(""))
+				message += fmt.Sprintf("  - %s\n", user.GetDisplayName(""))
 			}
 		}
 	}
@@ -168,6 +168,7 @@ func (p *Plugin) executeCommandLunchbotBlacklistAdd(args *model.CommandArgs) *mo
 	} else {
 		data.Blacklists[args.UserId] = map[string]struct{}{user.Id: struct{}{}}
 	}
+	p.WriteToStorage(&data)
 
 	return &model.CommandResponse{
 		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
@@ -197,6 +198,7 @@ func (p *Plugin) executeCommandLunchbotBlacklistRemove(args *model.CommandArgs) 
 	if data.Blacklists != nil {
 		if blacklist, ok := data.Blacklists[args.UserId]; ok {
 			delete(blacklist, user.Id)
+			p.WriteToStorage(&data)
 
 			return &model.CommandResponse{
 				ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
@@ -204,6 +206,7 @@ func (p *Plugin) executeCommandLunchbotBlacklistRemove(args *model.CommandArgs) 
 			}
 		}
 	}
+
 	return &model.CommandResponse{
 		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
 		Text:         fmt.Sprintf("Error: Cannot remove '%s' from your blacklist.", user.GetDisplayName("")),
@@ -218,7 +221,7 @@ func (p *Plugin) executeCommandLunchbotTopicsShow(args *model.CommandArgs) *mode
 		if topics, ok := data.UserTopics[args.UserId]; ok {
 			message = "Your topics:\n"
 			for entry := range topics {
-				message += fmt.Sprintf("  - %s", entry)
+				message += fmt.Sprintf("  - %s\n", entry)
 			}
 		}
 	}
@@ -248,6 +251,7 @@ func (p *Plugin) executeCommandLunchbotTopicsAdd(args *model.CommandArgs) *model
 	} else {
 		data.UserTopics[args.UserId] = map[string]struct{}{givenTopic: struct{}{}}
 	}
+	p.WriteToStorage(&data)
 
 	return &model.CommandResponse{
 		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
@@ -270,6 +274,7 @@ func (p *Plugin) executeCommandLunchbotTopicsRemove(args *model.CommandArgs) *mo
 		if topics, ok := data.UserTopics[args.UserId]; ok {
 			if _, ok := data.UserTopics[args.UserId][givenTopic]; ok {
 				delete(topics, givenTopic)
+				p.WriteToStorage(&data)
 				return &model.CommandResponse{
 					ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
 					Text:         fmt.Sprintf("Removed '%s' from your topics", givenTopic),
@@ -277,6 +282,7 @@ func (p *Plugin) executeCommandLunchbotTopicsRemove(args *model.CommandArgs) *mo
 			}
 		}
 	}
+
 	return &model.CommandResponse{
 		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
 		Text:         fmt.Sprintf("Error: Cannot remove '%s' from your topics.", givenTopic),

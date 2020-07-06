@@ -49,7 +49,7 @@ func (p *Plugin) OnActivate() error {
 		Username:    "lunchbot",
 		DisplayName: "LunchBot",
 		Description: "A bot to find random people to lunch with",
-	}, plugin.ProfileImagePath("/assets/lunch.png"))
+	}, plugin.ProfileImagePath("/assets/together.png"))
 	if ensureBotError != nil {
 		return errors.Wrap(ensureBotError, "failed to ensure lunchbot.")
 	}
