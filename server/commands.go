@@ -305,17 +305,14 @@ func (p *Plugin) executeCommandLunchbot(args *model.CommandArgs) *model.CommandR
 		}
 	}
 
-	topicForTriggerer := p.GetRandomTopic(pairedUser.Id)
-	topicForPairedUser := p.GetRandomTopic(args.UserId)
-
-	msgForTriggerer := fmt.Sprintf("Hey %s! You should meet up with %s. %s", triggerUser.GetDisplayName(""), pairedUser.GetDisplayName(""), topicForTriggerer)
-	msgForPairedUser := fmt.Sprintf("Hey %s! You should meet up with %s. %s", pairedUser.GetDisplayName(""), triggerUser.GetDisplayName(""), topicForPairedUser)
-
-	resp := p.SendPrivateMessage(msgForTriggerer, triggerUser.Id)
+	users := []string{triggerUser.Id, pairedUser.Id}
+	resp := p.SendGroupMessage("Hey! I think both of you should meet for lunch soon!", users)
 	if resp != nil {
 		return resp
 	}
-	resp = p.SendPrivateMessage(msgForPairedUser, pairedUser.Id)
+
+	topics := p.GetRandomTopicsMsg(users)
+	resp = p.SendGroupMessage(topics, users)
 	if resp != nil {
 		return resp
 	}

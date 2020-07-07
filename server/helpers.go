@@ -9,23 +9,29 @@ import (
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
-// GetRandomTopic return a random topic for the given userId
-// Return nothing when there's no topics stored for the userId
-func (p *Plugin) GetRandomTopic(userID string) string {
+// GetRandomTopicsMsg return a random topic for the given userIDs
+// Return nothing when there's no topics stored for the userIDs
+func (p *Plugin) GetRandomTopicsMsg(userIDs []string) string {
 
-	data := p.ReadFromStorage()
-	if topics, ok := data.UserTopics[userID]; ok {
-		topicKeys := reflect.ValueOf(topics).MapKeys()
-		if len(topicKeys) > 0 {
-			rand.Shuffle(len(topicKeys), func(i, j int) {
-				topicKeys[i], topicKeys[j] = topicKeys[j], topicKeys[i]
-			})
-			randomTopic := topicKeys[0]
-			return fmt.Sprintf("You could talk about %s.", randomTopic)
+	randomTopics := []string{}
+	for _, userID := range userIDs {
+		data := p.ReadFromStorage()
+		if topics, ok := data.UserTopics[userID]; ok {
+			topicKeys := reflect.ValueOf(topics).MapKeys()
+			if len(topicKeys) > 0 {
+				rand.Shuffle(len(topicKeys), func(i, j int) {
+					topicKeys[i], topicKeys[j] = topicKeys[j], topicKeys[i]
+				})
+				randomTopics = append(randomTopics, fmt.Sprintf("%s", topicKeys[0]))
+			}
 		}
 	}
 
-	return ""
+	if len(randomTopics) <= 0 {
+		return ""
+	}
+
+	return fmt.Sprintf("You could talk about %s", strings.Join(randomTopics, " or "))
 }
 
 //GetUser returns a user that is identified by a given string. It tries different ways to get the user.
@@ -57,13 +63,14 @@ func (p *Plugin) GetUser(userStr string) *model.User {
 	return nil
 }
 
-//SendPrivateMessage sends the given message to the given userID
-func (p *Plugin) SendPrivateMessage(message string, userID string) *model.CommandResponse {
-	channel, err := p.API.GetDirectChannel(p.botID, userID)
+//SendGroupMessage sends the given message to the given userIDs
+func (p *Plugin) SendGroupMessage(message string, userIDs []string) *model.CommandResponse {
+	userIDs = append(userIDs, p.botID)
+	channel, err := p.API.GetGroupChannel(userIDs)
 	if err != nil {
 		return &model.CommandResponse{
 			ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
-			Text:         fmt.Sprintf("Error: Cannot get as direct channel to message %s", userID),
+			Text:         fmt.Sprintf("Error: Cannot get as group channel to message %s", userIDs),
 		}
 	}
 	post := &model.Post{

@@ -15,7 +15,7 @@ const manifestStr = `
   "id": "com.nilsbrinkmann.lunchbot",
   "name": "Lunchbot Plugin",
   "description": "This plugin pairs random users for lunch",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "min_server_version": "5.12.0",
   "server": {
     "executables": {
