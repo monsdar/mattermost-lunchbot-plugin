@@ -2,11 +2,13 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
 	"reflect"
 	"strings"
 
 	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mroth/weightedrand"
 )
 
 // GetRandomTopicsMsg return a random topic for the given userIDs
@@ -93,24 +95,26 @@ func (p *Plugin) SendGroupMessage(message string, userIDs []string) *model.Comma
 // This function is limited to 1000 users per channel
 func (p *Plugin) GetPairingForUserID(channelID string, userID string) (*model.User, *model.AppError) {
 	users, _ := p.API.GetUsersInChannel(channelID, "username", 0, 1000)
-	rand.Shuffle(len(users), func(i, j int) {
-		users[i], users[j] = users[j], users[i]
-	})
 
-	//we need to check the blacklist later on, read here to avoid multiple reads
+	//read the users data for blacklist and weightedrandom
 	data := p.ReadFromStorage()
 
-	targetuser := new(model.User)
-	hasUserBeenFound := false
+	weightedUsers := []weightedrand.Choice{} //list of users, sorted by weight
 	for _, user := range users {
+		//is this the triggering user?
 		if user.Id == userID {
 			continue
 		}
+		//is this a bot?
 		if user.IsBot {
 			continue
 		}
-
-		//check blacklists of triggering and target user as well
+		//is this user offline?
+		status, err := p.API.GetUserStatus(user.Id)
+		if (err != nil) || (status.Status == "offline") {
+			continue
+		}
+		//is this user on a blacklist? Is the triggering user on the users blacklist?
 		if data.Blacklists != nil {
 			if blacklist, ok := data.Blacklists[userID]; ok {
 				if _, ok := blacklist[user.Id]; ok {
@@ -124,20 +128,37 @@ func (p *Plugin) GetPairingForUserID(channelID string, userID string) (*model.Us
 			}
 		}
 
-		status, err := p.API.GetUserStatus(user.Id)
-		if (err != nil) || (status.Status == "offline") {
-			continue
+		//check if the user has already been paired lately. Add him with a weight according to how recent the pairing has been
+		//by iterating in reverse we make sure that users that appear multiple times in the list will not mess up the weights
+		isNewUser := true
+		if data.LastPairings != nil {
+			for index := len(data.LastPairings[userID]) - 1; index >= 0; index-- {
+				currentUserID := data.LastPairings[userID][index]
+				if currentUserID == user.Id {
+					userWeight := uint(math.Abs(float64(index - len(data.LastPairings[userID]))))
+					weightedUsers = append(weightedUsers, weightedrand.Choice{Weight: userWeight, Item: user})
+					isNewUser = false
+					break
+				}
+			}
+			if !isNewUser { //if the user has been found within our recentpairing we can continue the loop
+				continue
+			}
 		}
 
-		targetuser = user
-		hasUserBeenFound = true
-		break
+		//Finally... this is a brand-new user that has never paired with our triggering user. Add him with a very high weight, so he'll be chosen with a high possibility
+		weightedUsers = append(weightedUsers, weightedrand.Choice{Weight: 1000, Item: user})
 	}
 
-	if !hasUserBeenFound {
-		return nil, &model.AppError{
-			Message: "Cannot match a user in this channel...",
+	if len(weightedUsers) > 0 {
+		chooser := weightedrand.NewChooser(weightedUsers...)
+		user, ok := chooser.Pick().(*model.User)
+		if ok {
+			return user, nil
 		}
 	}
-	return targetuser, nil
+
+	return nil, &model.AppError{
+		Message: "Cannot find a user to pair with in this channel...",
+	}
 }

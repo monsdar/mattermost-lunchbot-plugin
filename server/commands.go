@@ -305,8 +305,17 @@ func (p *Plugin) executeCommandLunchbot(args *model.CommandArgs) *model.CommandR
 		}
 	}
 
+	data := p.ReadFromStorage()
+	if data.LastPairings == nil {
+		data.LastPairings = map[string][]string{}
+	}
+	data.LastPairings[triggerUser.Id] = append(data.LastPairings[triggerUser.Id], pairedUser.Id)
+	data.LastPairings[pairedUser.Id] = append(data.LastPairings[pairedUser.Id], triggerUser.Id)
+	p.WriteToStorage(&data)
+
 	users := []string{triggerUser.Id, pairedUser.Id}
 	resp := p.SendGroupMessage("Hey! I think both of you should meet for lunch soon!", users)
+
 	if resp != nil {
 		return resp
 	}

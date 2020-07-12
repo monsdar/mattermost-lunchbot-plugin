@@ -26,7 +26,8 @@ type Plugin struct {
 
 //LunchbotData contains all data necessary to be stored for the Lunchbot Plugin
 type LunchbotData struct {
-	LastPairings map[string][]string            `json:"LastPairings"` //Key: UserID, Value: List of users that this user has been paired with
+	//TODO: Make LastPairing a map[string]Queue[string] with a fixed amount of entries... Else the data will grow further and further, which does not make much sense...
+	LastPairings map[string][]string            `json:"LastPairings"` //Key: UserID, Value: Ordered list of users that this user has been paired with, most recent user is the latest pairing
 	UserTopics   map[string]map[string]struct{} `json:"UserTopics"`   //Key: UserID, Value: Set of topics a user is interested in
 	Blacklists   map[string]map[string]struct{} `json:"Blacklists"`   //Key: UserID, Value: Set of users that this user has blacklisted
 }
