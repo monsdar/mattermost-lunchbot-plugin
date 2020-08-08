@@ -311,6 +311,14 @@ func (p *Plugin) executeCommandLunchbot(args *model.CommandArgs) *model.CommandR
 	}
 	data.LastPairings[triggerUser.Id] = append(data.LastPairings[triggerUser.Id], pairedUser.Id)
 	data.LastPairings[pairedUser.Id] = append(data.LastPairings[pairedUser.Id], triggerUser.Id)
+	if len(data.LastPairings[triggerUser.Id]) > NumHistoryEntries {
+		index := 0 //remove the oldest element
+		data.LastPairings[triggerUser.Id] = append(data.LastPairings[triggerUser.Id][:index], data.LastPairings[triggerUser.Id][index+1:]...)
+	}
+	if len(data.LastPairings[pairedUser.Id]) > NumHistoryEntries {
+		index := 0 //remove the oldest element
+		data.LastPairings[pairedUser.Id] = append(data.LastPairings[pairedUser.Id][:index], data.LastPairings[pairedUser.Id][index+1:]...)
+	}
 	p.WriteToStorage(&data)
 
 	users := []string{triggerUser.Id, pairedUser.Id}
