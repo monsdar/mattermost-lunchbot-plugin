@@ -11,6 +11,7 @@ import (
 
 const (
 	commandLunchbot                = "lunchbot"
+	commandLunchbotFinish          = commandLunchbot + " finish"
 	commandLunchbotBlacklistShow   = commandLunchbot + " blacklist show"
 	commandLunchbotBlacklistAdd    = commandLunchbot + " blacklist add"
 	commandLunchbotBlacklistRemove = commandLunchbot + " blacklist remove"
@@ -25,6 +26,11 @@ func (p *Plugin) registerCommands() error {
 			Trigger:          commandLunchbot,
 			AutoComplete:     true,
 			AutoCompleteDesc: "Pairs you with a random user",
+		},
+		model.Command{
+			Trigger:          commandLunchbotFinish,
+			AutoComplete:     true,
+			AutoCompleteDesc: "Finishes your current pairing",
 		},
 		model.Command{
 			Trigger:          commandLunchbotBlacklistShow,
@@ -92,6 +98,9 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		},
 		commandLunchbotTopicsRemove: func(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
 			return p.executeCommandLunchbotTopicsRemove(args), nil
+		},
+		commandLunchbotFinish: func(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
+			return p.executeCommandLunchbotFinish(args), nil
 		},
 	}
 
@@ -289,6 +298,56 @@ func (p *Plugin) executeCommandLunchbotTopicsRemove(args *model.CommandArgs) *mo
 	}
 }
 
+func (p *Plugin) executeCommandLunchbotFinish(args *model.CommandArgs) *model.CommandResponse {
+	triggerUser, err := p.API.GetUser(args.UserId)
+	if err != nil {
+		return &model.CommandResponse{
+			ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
+			Text:         "Error: Cannot get your user...",
+		}
+	}
+
+	data := p.ReadFromStorage()
+	if data.ActivePairings == nil {
+		data.ActivePairings = map[string]string{}
+	}
+	pairedUserID, ok := data.ActivePairings[args.UserId]
+	if !ok {
+		return &model.CommandResponse{
+			ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
+			Text:         "Error: You do not seem to be paired with another user",
+		}
+	}
+
+	//Remove from active sessions
+	delete(data.ActivePairings, args.UserId)
+	delete(data.ActivePairings, pairedUserID)
+
+	//Add to the history of pairings, needed to avoid users getting paired again immediately
+	if data.LastPairings == nil {
+		data.LastPairings = map[string][]string{}
+	}
+	data.LastPairings[triggerUser.Id] = append(data.LastPairings[triggerUser.Id], pairedUserID)
+	data.LastPairings[pairedUserID] = append(data.LastPairings[pairedUserID], triggerUser.Id)
+	if len(data.LastPairings[triggerUser.Id]) > NumHistoryEntries {
+		index := 0 //remove the oldest element
+		data.LastPairings[triggerUser.Id] = append(data.LastPairings[triggerUser.Id][:index], data.LastPairings[triggerUser.Id][index+1:]...)
+	}
+	if len(data.LastPairings[pairedUserID]) > NumHistoryEntries {
+		index := 0 //remove the oldest element
+		data.LastPairings[pairedUserID] = append(data.LastPairings[pairedUserID][:index], data.LastPairings[pairedUserID][index+1:]...)
+	}
+	p.WriteToStorage(&data)
+
+	//notify both users that their pairing has been stopped
+	resp := p.SendGroupMessage("Your session has been finished! Thanks a lot for using Lunchbot :sunglasses:", []string{triggerUser.Id, pairedUserID})
+	if resp != nil {
+		return resp
+	}
+
+	return &model.CommandResponse{}
+}
+
 func (p *Plugin) executeCommandLunchbot(args *model.CommandArgs) *model.CommandResponse {
 	triggerUser, err := p.API.GetUser(args.UserId)
 	if err != nil {
@@ -297,6 +356,20 @@ func (p *Plugin) executeCommandLunchbot(args *model.CommandArgs) *model.CommandR
 			Text:         "Error: Cannot get your user...",
 		}
 	}
+
+	//is this user already paired?
+	data := p.ReadFromStorage()
+	if data.ActivePairings == nil {
+		data.ActivePairings = map[string]string{}
+	}
+	if pairing, ok := data.ActivePairings[triggerUser.Id]; ok {
+		otherUser, _ := p.API.GetUser(pairing)
+		return &model.CommandResponse{
+			ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
+			Text:         fmt.Sprintf("Error: You are already paired with %s. Please finish that pairing with `/lunchbot finish`.", otherUser.GetDisplayName("")),
+		}
+	}
+
 	pairedUser, err := p.GetPairingForUserID(args.ChannelId, args.UserId)
 	if err != nil {
 		return &model.CommandResponse{
@@ -304,21 +377,8 @@ func (p *Plugin) executeCommandLunchbot(args *model.CommandArgs) *model.CommandR
 			Text:         "Error: Cannot match you with a user from this channel",
 		}
 	}
-
-	data := p.ReadFromStorage()
-	if data.LastPairings == nil {
-		data.LastPairings = map[string][]string{}
-	}
-	data.LastPairings[triggerUser.Id] = append(data.LastPairings[triggerUser.Id], pairedUser.Id)
-	data.LastPairings[pairedUser.Id] = append(data.LastPairings[pairedUser.Id], triggerUser.Id)
-	if len(data.LastPairings[triggerUser.Id]) > NumHistoryEntries {
-		index := 0 //remove the oldest element
-		data.LastPairings[triggerUser.Id] = append(data.LastPairings[triggerUser.Id][:index], data.LastPairings[triggerUser.Id][index+1:]...)
-	}
-	if len(data.LastPairings[pairedUser.Id]) > NumHistoryEntries {
-		index := 0 //remove the oldest element
-		data.LastPairings[pairedUser.Id] = append(data.LastPairings[pairedUser.Id][:index], data.LastPairings[pairedUser.Id][index+1:]...)
-	}
+	data.ActivePairings[triggerUser.Id] = pairedUser.Id
+	data.ActivePairings[pairedUser.Id] = triggerUser.Id
 	p.WriteToStorage(&data)
 
 	users := []string{triggerUser.Id, pairedUser.Id}

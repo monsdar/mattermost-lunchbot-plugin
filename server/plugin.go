@@ -26,9 +26,10 @@ type Plugin struct {
 
 //LunchbotData contains all data necessary to be stored for the Lunchbot Plugin
 type LunchbotData struct {
-	LastPairings map[string][]string            `json:"LastPairings"` //Key: UserID, Value: Ordered list of users that this user has been paired with, most recent user is the latest pairing
-	UserTopics   map[string]map[string]struct{} `json:"UserTopics"`   //Key: UserID, Value: Set of topics a user is interested in
-	Blacklists   map[string]map[string]struct{} `json:"Blacklists"`   //Key: UserID, Value: Set of users that this user has blacklisted
+	ActivePairings map[string]string              `json:"ActivePairings"` //Key: UserID, Value: UserID of the other paired user
+	LastPairings   map[string][]string            `json:"LastPairings"`   //Key: UserID, Value: Ordered list of users that this user has been paired with, most recent user is the latest pairing
+	UserTopics     map[string]map[string]struct{} `json:"UserTopics"`     //Key: UserID, Value: Set of topics a user is interested in
+	Blacklists     map[string]map[string]struct{} `json:"Blacklists"`     //Key: UserID, Value: Set of users that this user has blacklisted
 }
 
 //NumHistoryEntries is the number of last pairings per user that get stored in order to avoid pairing with the same users again and again

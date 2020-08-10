@@ -8,11 +8,15 @@ Mike: /lunchbot blacklist add George
 Mike: /lunchbot topics add Basketball
 Mike: /lunchbot
 
-Direct chat to Mike:
-LunchBot: Hey Mike! You should meet up with John. You could talk about Basketball.
+Group chat to Mike and John:
+LunchBot: Hey! I think both of you should meet for lunch soon!
+LunchBot: You could talk about Geocaching or Basketball.
 
-Direct chat to John:
-LunchBot: Hey John! You should meet up with Mike. You could talk about Geocaching.
+<two hours later>
+John: /lunchbot finish
+
+Group chat to Mike and John:
+LunchBot: Your session has been finished! Thanks a lot for using Lunchbot
 ```
 
 

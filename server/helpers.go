@@ -109,6 +109,10 @@ func (p *Plugin) GetPairingForUserID(channelID string, userID string) (*model.Us
 		if user.IsBot {
 			continue
 		}
+		//is the user already paired?
+		if _, ok := data.ActivePairings[user.Id]; ok {
+			continue
+		}
 		//is this user offline?
 		status, err := p.API.GetUserStatus(user.Id)
 		if (err != nil) || (status.Status == "offline") {
