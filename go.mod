@@ -7,12 +7,12 @@ require (
 	github.com/jmcvetta/randutil v0.0.0-20150817122601-2bb1b664bcff
 	github.com/mattermost/mattermost-plugin-api v0.0.10
 	github.com/mattermost/mattermost-server v5.11.1+incompatible
-	github.com/mattermost/mattermost-server/v5 v5.21.0
+	github.com/mattermost/mattermost-server/v5 v5.24.0
 	github.com/mholt/archiver/v3 v3.3.0
 	github.com/mroth/weightedrand v0.2.2
 	github.com/nicksnyder/go-i18n v1.10.1 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.5.1
-	google.golang.org/grpc v1.24.0
+	google.golang.org/grpc v1.29.1
 	gopkg.in/asn1-ber.v1 v1.0.0-20181015200546-f715ec2f112d // indirect
 )

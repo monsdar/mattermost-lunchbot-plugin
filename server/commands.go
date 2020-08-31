@@ -383,7 +383,6 @@ func (p *Plugin) executeCommandLunchbot(args *model.CommandArgs) *model.CommandR
 
 	users := []string{triggerUser.Id, pairedUser.Id}
 	resp := p.SendGroupMessage("Hey! I think both of you should meet for lunch soon!", users)
-
 	if resp != nil {
 		return resp
 	}
@@ -392,6 +391,29 @@ func (p *Plugin) executeCommandLunchbot(args *model.CommandArgs) *model.CommandR
 	resp = p.SendGroupMessage(topics, users)
 	if resp != nil {
 		return resp
+	}
+
+	resp = p.SendGroupMessage("You can finish this pairing by entering `/lunchbot finish`. Have fun!", users)
+	if resp != nil {
+		return resp
+	}
+
+	//advertise the lunchbot a bit :)
+	message := fmt.Sprintf("Yeah! %s and %s are going to lunch together! I am lunchbot, and you can trigger me by entering `/lunchbot` :sunglasses::point_right::point_right:",
+		triggerUser.GetDisplayName(""),
+		pairedUser.GetDisplayName(""))
+	post := &model.Post{
+		ChannelId: args.ChannelId,
+		UserId:    p.botID,
+		Message:   message,
+	}
+	if _, err = p.API.CreatePost(post); err != nil {
+		const errorMessage = "Error: Failed to create post"
+		p.API.LogError(errorMessage, "err", err.Error())
+		return &model.CommandResponse{
+			ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
+			Text:         errorMessage,
+		}
 	}
 
 	return &model.CommandResponse{}

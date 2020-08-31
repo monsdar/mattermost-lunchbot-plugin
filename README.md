@@ -11,6 +11,7 @@ Mike: /lunchbot
 Group chat to Mike and John:
 LunchBot: Hey! I think both of you should meet for lunch soon!
 LunchBot: You could talk about Geocaching or Basketball.
+LunchBot: You can finish this pairing by entering `/lunchbot finish`. Have fun!
 
 <two hours later>
 John: /lunchbot finish
