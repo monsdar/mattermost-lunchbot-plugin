@@ -11,14 +11,53 @@ import (
 
 const (
 	commandLunchbot                = "lunchbot"
-	commandLunchbotFinish          = commandLunchbot + " finish"
-	commandLunchbotBlacklistShow   = commandLunchbot + " blacklist show"
-	commandLunchbotBlacklistAdd    = commandLunchbot + " blacklist add"
-	commandLunchbotBlacklistRemove = commandLunchbot + " blacklist remove"
-	commandLunchbotTopicsShow      = commandLunchbot + " topics show"
-	commandLunchbotTopicsAdd       = commandLunchbot + " topics add"
-	commandLunchbotTopicsRemove    = commandLunchbot + " topics remove"
+	subcommandGo                   = "go"
+	subcommandFinish               = "finish"
+	subcommandBlacklistShow        = "blacklist show"
+	subcommandBlacklistAdd         = "blacklist add"
+	subcommandBlacklistRemove      = "blacklist remove"
+	subcommandTopicsShow           = "topics show"
+	subcommandTopicsAdd            = "topics add"
+	subcommandTopicsRemove         = "topics remove"
+	commandLunchbotGo              = commandLunchbot + " " + subcommandGo
+	commandLunchbotFinish          = commandLunchbot + " " + subcommandFinish
+	commandLunchbotBlacklistShow   = commandLunchbot + " " + subcommandBlacklistShow
+	commandLunchbotBlacklistAdd    = commandLunchbot + " " + subcommandBlacklistAdd
+	commandLunchbotBlacklistRemove = commandLunchbot + " " + subcommandBlacklistRemove
+	commandLunchbotTopicsShow      = commandLunchbot + " " + subcommandTopicsShow
+	commandLunchbotTopicsAdd       = commandLunchbot + " " + subcommandTopicsAdd
+	commandLunchbotTopicsRemove    = commandLunchbot + " " + subcommandTopicsRemove
 )
+
+func getAutocompleteData() *model.AutocompleteData {
+	lunchbotCommand := model.NewAutocompleteData(commandLunchbot, "[command]", "Get paired to get some lunch, available subcommands: [go], [finish], [blacklist show], [blacklist add], [blacklist remove], [topics show], [topics add], [topics remove]")
+
+	goCommand := model.NewAutocompleteData(subcommandGo, "", "Pairs you with a random user")
+	lunchbotCommand.AddCommand(goCommand)
+
+	finish := model.NewAutocompleteData(subcommandFinish, "", "Finishes your current pairing")
+	lunchbotCommand.AddCommand(finish)
+
+	blacklistShow := model.NewAutocompleteData(subcommandBlacklistShow, "", "Your blacklist is a list of users you do not want to get paired with")
+	lunchbotCommand.AddCommand(blacklistShow)
+	blacklistAdd := model.NewAutocompleteData(subcommandBlacklistShow, "[username]", "Add someone to your blacklist by his username")
+	blacklistAdd.AddTextArgument("Username: The user you want to blacklist", "[username]", "")
+	lunchbotCommand.AddCommand(blacklistAdd)
+	blacklistRemove := model.NewAutocompleteData(subcommandBlacklistShow, "[username]", "Remove someone from your blacklist by his username")
+	blacklistRemove.AddTextArgument("Username: The user you want to remove from your blacklist", "[username]", "")
+	lunchbotCommand.AddCommand(blacklistRemove)
+
+	topicsShow := model.NewAutocompleteData(subcommandTopicsShow, "", "Topics are things you'd like to talk about")
+	lunchbotCommand.AddCommand(topicsShow)
+	topicsAdd := model.NewAutocompleteData(subcommandTopicsAdd, "[topic]", "Add a topic to your list")
+	topicsAdd.AddTextArgument("Topic: What do you want to talk about?", "[topic]", "")
+	lunchbotCommand.AddCommand(topicsAdd)
+	topicsRemove := model.NewAutocompleteData(subcommandTopicsRemove, "[topic]", "Remove a topic from your list")
+	topicsRemove.AddTextArgument("Topic: `Remove topic from your list`", "[topic]", "")
+	lunchbotCommand.AddCommand(topicsRemove)
+
+	return lunchbotCommand
+}
 
 func (p *Plugin) registerCommands() error {
 	commands := [...]model.Command{
@@ -26,45 +65,7 @@ func (p *Plugin) registerCommands() error {
 			Trigger:          commandLunchbot,
 			AutoComplete:     true,
 			AutoCompleteDesc: "Pairs you with a random user",
-		},
-		model.Command{
-			Trigger:          commandLunchbotFinish,
-			AutoComplete:     true,
-			AutoCompleteDesc: "Finishes your current pairing",
-		},
-		model.Command{
-			Trigger:          commandLunchbotBlacklistShow,
-			AutoComplete:     true,
-			AutoCompleteDesc: "Your blacklist is a list of users you do not want to get paired with",
-		},
-		model.Command{
-			Trigger:          commandLunchbotBlacklistAdd,
-			AutoComplete:     true,
-			AutoCompleteHint: "<username>",
-			AutoCompleteDesc: "Add someone to your blacklist by his username",
-		},
-		model.Command{
-			Trigger:          commandLunchbotBlacklistRemove,
-			AutoComplete:     true,
-			AutoCompleteHint: "<username>",
-			AutoCompleteDesc: "Remove someone from your blacklist by his username",
-		},
-		model.Command{
-			Trigger:          commandLunchbotTopicsShow,
-			AutoComplete:     true,
-			AutoCompleteDesc: "Topics are things you'd like to talk about",
-		},
-		model.Command{
-			Trigger:          commandLunchbotTopicsAdd,
-			AutoComplete:     true,
-			AutoCompleteHint: "<topic>",
-			AutoCompleteDesc: "Add a topic to your list",
-		},
-		model.Command{
-			Trigger:          commandLunchbotTopicsRemove,
-			AutoComplete:     true,
-			AutoCompleteHint: "<topic>",
-			AutoCompleteDesc: "Remove a topic from your list",
+			AutocompleteData: getAutocompleteData(),
 		},
 	}
 
@@ -101,6 +102,9 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		},
 		commandLunchbotFinish: func(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
 			return p.executeCommandLunchbotFinish(args), nil
+		},
+		commandLunchbotGo: func(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
+			return p.executeCommandLunchbot(args), nil
 		},
 	}
 
@@ -366,7 +370,7 @@ func (p *Plugin) executeCommandLunchbot(args *model.CommandArgs) *model.CommandR
 		otherUser, _ := p.API.GetUser(pairing)
 		return &model.CommandResponse{
 			ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
-			Text:         fmt.Sprintf("Error: You are already paired with %s. Please finish that pairing with `/lunchbot finish`.", otherUser.GetDisplayName("")),
+			Text:         fmt.Sprintf("Error: You are already paired with @%s. Please finish that pairing with `/lunchbot finish`.", otherUser.GetDisplayName("")),
 		}
 	}
 
