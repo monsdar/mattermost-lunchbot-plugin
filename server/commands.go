@@ -399,7 +399,7 @@ func (p *Plugin) executeCommandLunchbot(args *model.CommandArgs) *model.CommandR
 	}
 
 	//advertise the lunchbot a bit :)
-	message := fmt.Sprintf("Yeah! %s and %s are going to lunch together! I am lunchbot, and you can trigger me by entering `/lunchbot` :sunglasses::point_right::point_right:",
+	message := fmt.Sprintf("Yeah! @%s and @%s are going to lunch together! I am lunchbot, and you can trigger me by entering `/lunchbot` :sunglasses::point_right::point_right:",
 		triggerUser.GetDisplayName(""),
 		pairedUser.GetDisplayName(""))
 	post := &model.Post{

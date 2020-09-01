@@ -18,7 +18,7 @@ const manifestStr = `
   "homepage_url": "https://github.com/monsdar/mattermost-lunchbot-plugin",
   "support_url": "https://github.com/monsdar/mattermost-lunchbot-plugin/issues",
   "release_notes_url": "https://github.com/monsdar/mattermost-lunchbot-plugin/releases",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "min_server_version": "5.12.0",
   "server": {
     "executables": {
